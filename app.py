@@ -3,7 +3,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 # ── Bootstrap: rebuild index if missing (HF Spaces cold start) ──
 INDEX_DIR = os.path.join(os.path.dirname(__file__), "data", "index")
-CHUNKS_PATH = os.path.join(INDEX_DIR, "chunk_metadata.json")
+CHUNKS_PATH = os.path.join(os.path.dirname(__file__), "data", "processed", "chunk_metadata.json")
 FAISS_PATH = os.path.join(INDEX_DIR, "faiss_index.bin")
 
 if not os.path.exists(FAISS_PATH):
