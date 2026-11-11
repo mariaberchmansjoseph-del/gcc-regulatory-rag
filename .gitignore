@@ -1,5 +1,6 @@
 data/raw/*.pdf
-data/processed/
+data/processed/*.bin
+data/processed/*.pkl
 data/index/*.bin
 data/index/*.pkl
 __pycache__/
