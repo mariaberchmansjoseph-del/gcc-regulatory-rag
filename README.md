@@ -4,14 +4,14 @@ emoji: 🏦
 colorFrom: blue
 colorTo: green
 sdk: gradio
-sdk_version: 3.50.2
+sdk_version: 4.44.1
 app_file: app.py
 pinned: true
 ---
 
 # GCC Regulatory Intelligence RAG
 
-AI-powered Q&A over UAE financial regulations using hybrid retrieval.
+AI-powered Q&A over UAE financial regulations.
 
 ## Evaluation
 - Faithfulness: 0.926
