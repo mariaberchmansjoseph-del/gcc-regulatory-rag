@@ -1,0 +1,15 @@
+{
+  "faithfulness": 0.926,
+  "answer_relevancy": 0.9613,
+  "num_questions": 10,
+  "model": "gpt-4o-mini",
+  "embedding_model": "text-embedding-3-small",
+  "chunks": 189,
+  "documents": [
+    "CBUAE FSR 2024",
+    "CBUAE FSR 2025",
+    "IMF UAE 2024",
+    "DFSA AML 2024",
+    "SCA Amendments 2024"
+  ]
+}
