@@ -1,0 +1,6 @@
+data/raw/*.pdf
+data/index/*.bin
+data/index/*.pkl
+__pycache__/
+*.pyc
+.env
