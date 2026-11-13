@@ -78,7 +78,7 @@ with gr.Blocks(title="GCC Regulatory RAG", theme=gr.themes.Soft()) as demo:
     sources_box = gr.Markdown(label="Sources")
     submit.click(fn=query_rag, inputs=question, outputs=[answer_box, sources_box])
     question.submit(fn=query_rag, inputs=question, outputs=[answer_box, sources_box])
-    gr.Markdown("---\n**RAGAs:** Faithfulness 0.926 · Answer Relevancy 0.961 | Built by Joseph")
+    gr.Markdown("---\n**RAGAs:** Faithfulness 0.926 · Answer Relevancy 0.961 | Built by Maria")
 
 if __name__ == "__main__":
     demo.launch(server_name="0.0.0.0", server_port=7860)
