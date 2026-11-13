@@ -1,15 +1,30 @@
-import os, sys
+import os, sys, json
 sys.path.insert(0, os.path.dirname(__file__))
+
+INDEX_DIR = os.path.join(os.path.dirname(__file__), "data", "index")
+CHUNKS_PATH = os.path.join(os.path.dirname(__file__), "data", "processed", "chunk_metadata.json")
+FAISS_PATH = os.path.join(INDEX_DIR, "faiss_index.bin")
+
+os.makedirs(INDEX_DIR, exist_ok=True)
+os.makedirs(os.path.dirname(CHUNKS_PATH), exist_ok=True)
+
+if not os.path.exists(FAISS_PATH):
+    print("Index not found — rebuilding from chunk_metadata.json...")
+    from openai import OpenAI
+    import src.retrieval.indexer as idx_module
+    idx_module.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
+    from src.retrieval.indexer import HybridRetriever
+    with open(CHUNKS_PATH) as f:
+        chunks = json.load(f)
+    retriever = HybridRetriever()
+    retriever.build_index(chunks)
+    print(f"✓ Index rebuilt: {len(chunks)} chunks")
 
 from openai import OpenAI
 import src.generation.rag_chain as gen_module
-gen_module.client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-
+gen_module.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
 from src.generation.rag_chain import GCCRegulatoryRAG
-from api.main import app as fastapi_app
 import gradio as gr
-from fastapi import FastAPI
-import uvicorn
 
 rag = GCCRegulatoryRAG()
 rag.load()
@@ -28,20 +43,16 @@ def query_rag(question):
     try:
         result = rag.query(question)
         answer = result["answer"]
+        confidence = "HIGH"
+        if "[Confidence: MEDIUM]" in answer: confidence = "MEDIUM"
+        elif "[Confidence: LOW]" in answer: confidence = "LOW"
         for tag in ["[Confidence: HIGH]", "[Confidence: MEDIUM]", "[Confidence: LOW]"]:
             answer = answer.replace(tag, "").strip()
-
-        confidence = "HIGH"
-        if "[Confidence: MEDIUM]" in result["answer"]: confidence = "MEDIUM"
-        elif "[Confidence: LOW]" in result["answer"]: confidence = "LOW"
-
-        sources_md = "\n".join([
+        sources_md = "\n\n".join([
             f"**[{s['rank']}]** {s['citation']} · `{s['regulator']}`"
             for s in result["sources"]
         ])
-
-        full_answer = f"**Confidence: {confidence}**\n\n{answer}"
-        return full_answer, sources_md
+        return f"**Confidence: {confidence}**\n\n{answer}", sources_md
     except Exception as e:
         return f"Error: {str(e)}", ""
 
@@ -51,7 +62,6 @@ with gr.Blocks(title="GCC Regulatory RAG", theme=gr.themes.Soft()) as demo:
 **AI-powered Q&A over UAE financial regulations**
 *CBUAE · DFSA · SCA · IMF — 189 chunks, hybrid retrieval (FAISS + BM25 + GraphRAG)*
 """)
-
     with gr.Row():
         with gr.Column(scale=2):
             question = gr.Textbox(
@@ -60,38 +70,15 @@ with gr.Blocks(title="GCC Regulatory RAG", theme=gr.themes.Soft()) as demo:
                 lines=2
             )
             submit = gr.Button("Ask", variant="primary")
-
         with gr.Column(scale=1):
             gr.Markdown("**Sample questions:**")
             for q in SAMPLE_QUESTIONS:
-                gr.Button(q, size="sm").click(
-                    fn=lambda x=q: x, outputs=question
-                )
-
-    with gr.Row():
-        answer_box = gr.Markdown(label="Answer")
-
-    with gr.Row():
-        sources_box = gr.Markdown(label="Sources")
-
+                gr.Button(q, size="sm").click(fn=lambda x=q: x, outputs=question)
+    answer_box = gr.Markdown(label="Answer")
+    sources_box = gr.Markdown(label="Sources")
     submit.click(fn=query_rag, inputs=question, outputs=[answer_box, sources_box])
     question.submit(fn=query_rag, inputs=question, outputs=[answer_box, sources_box])
-
-    gr.Markdown("""
----
-**Evaluation scores (RAGAs):** Faithfulness: 0.926 · Answer Relevancy: 0.961
-Built by Joseph | [GitHub](https://github.com/mariaberchmansjoseph-del/gcc-regulatory-rag)
-""")
-
-fastapi_app.mount("/", gr.mount_gradio_app(FastAPI(), demo, path="/ui"))
+    gr.Markdown("---\n**RAGAs:** Faithfulness 0.926 · Answer Relevancy 0.961 | Built by Joseph")
 
 if __name__ == "__main__":
-    import threading, time
-    
-    def run_fastapi():
-        uvicorn.run(fastapi_app, host="0.0.0.0", port=7860)
-    
-    t = threading.Thread(target=run_fastapi)
-    t.start()
-    
-    demo.launch(server_port=7861, share=False)
+    demo.launch(server_name="0.0.0.0", server_port=7860)
